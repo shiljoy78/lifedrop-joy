@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="bn"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LifeDrop Admin</title>
+<style>
+:root{--bg:#fff7f7;--card:#fff;--tx:#2a1717;--mu:#7a5a5a;--red:#c62828;--bd:#f0d3d3;--ok:#1b7a3a}
+@media (prefers-color-scheme:dark){:root{--bg:#1c1212;--card:#2a1a1a;--tx:#f6e8e8;--mu:#c3a0a0;--red:#ef5350;--bd:#4a2c2c;--ok:#6fcf8a}}
+*{box-sizing:border-box}
+body{margin:auto;max-width:560px;padding:14px;background:var(--bg);color:var(--tx);font-family:system-ui,"Noto Sans Bengali",sans-serif}
+h1{font-size:20px}
+textarea,input{width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx);font:inherit}
+textarea{height:220px}
+label{font-size:13px;color:var(--mu);display:block;margin:10px 0 4px}
+button{width:100%;margin-top:10px;padding:12px;border:0;border-radius:8px;background:var(--red);color:#fff;font:inherit;font-weight:600}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px;margin-top:10px;font-size:14px}
+.bad{color:var(--red)}.ok{color:var(--ok)}
+</style></head><body>
+<h1>🛠 LifeDrop Admin ইমপোর্ট</h1>
+<div id="login"><button id="gin">Google দিয়ে সাইন-ইন</button><div id="le" class="bad"></div></div>
+<div id="app" hidden>
+<div id="who" class="card"></div>
+<div class="card">প্রতি লাইনে একজন। কমা, ট্যাব বা | দিয়ে আলাদা করুন। ক্রম যেকোনো হতে পারে: নাম, এলাকা, গ্রুপ, ফোন। বয়স ও শেষ দানের তারিখ (YYYY-MM-DD) থাকলে সেটাও যাবে।</div>
+<label>তথ্য পেস্ট করুন</label>
+<textarea id="ta" placeholder="রাহিম, বানারীপাড়া, B+, 01712345678"></textarea>
+<label>এলাকা খালি থাকলে ডিফল্ট</label>
+<input id="def" value="বানারীপাড়া">
+<button id="pv">যাচাই করুন</button>
+<div id="sum"></div><div id="bad"></div>
+<button id="imp" hidden>ইমপোর্ট করুন</button>
+<div id="st" class="card" hidden></div>
+</div>
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import{getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import{getFirestore,collection,doc,getDocs,writeBatch}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+const cfg={apiKey:"AIzaSyCKm0vq5e-UOrUHA-PNzcsmxVQaD7yxReo",authDomain:"lifedrop-joy.firebaseapp.com",projectId:"lifedrop-joy",storageBucket:"lifedrop-joy.firebasestorage.app",messagingSenderId:"38132386653",appId:"1:38132386653:web:1093f566fe7ce7866436b4"};
+const ADMIN="shiljoy78@gmail.com";
+const app=initializeApp(cfg),auth=getAuth(app),db=getFirestore(app);
+const $=id=>document.getElementById(id);
+const dg=s=>s.replace(/[০-৯]/g,d=>"০১২৩৪৫৬৭৮৯".indexOf(d));
+let good=[];
+onAuthStateChanged(auth,u=>{
+ const isA=u&&(u.email||"").toLowerCase()===ADMIN;
+ $("login").hidden=!!isA;$("app").hidden=!isA;
+ if(u&&!isA)$("le").textContent="এই ইমেইল অ্যাডমিন নয়: "+u.email;
+ if(isA)$("who").textContent="অ্যাডমিন: "+u.email});
+$("gin").onclick=async()=>{try{await signInWithPopup(auth,new GoogleAuthProvider())}catch(e){$("le").textContent="সমস্যা: "+(e.code||"")}};
+function parse(line,def){
+ const parts=line.split(/\t|\||,/).map(x=>x.trim()).filter(Boolean);
+ const r={name:"",loc:"",bg:"",phone:"",age:null,last:null};const text=[];
+ for(const p of parts){
+  const t=dg(p).replace(/\s/g,"");
+  const g=t.match(/^(AB|A|B|O|0)[+\-−–]$/i);
+  const ph=t.split("/")[0].replace(/[-+]/g,"");
+  if(g){r.bg=(g[1]==="0"?"O":g[1].toUpperCase())+(/[+]/.test(t)?"+":"-")}
+  else if(/^(88)?0?1\d{9}$/.test(ph)&&ph.length>=10){let d=ph;if(d.length===13)d=d.slice(2);if(d.length===10)d="0"+d;r.phone=d}
+  else if(/^\d{4}-\d{2}-\d{2}$/.test(t))r.last=t;
+  else if(/^\d{2}$/.test(t)&&+t>=18&&+t<=65)r.age=+t;
+  else text.push(p)}
+ r.name=(text[0]||"").replace(/^[\d০-৯]+\s*[.)\-:]\s*/,"").trim();
+ r.loc=(text[1]||def).trim();
+ const why=[];
+ if(!r.name)why.push("নাম নেই");
+ if(!/^01\d{9}$/.test(r.phone))why.push("ফোন ঠিক নয়");
+ if(!r.bg)why.push("গ্রুপ নেই/ভুল");
+ return{r,why}}
+$("pv").onclick=async()=>{
+ const def=$("def").value.trim();good=[];
+ const lines=$("ta").value.split("\n").map(x=>x.trim()).filter(Boolean);
+ $("sum").innerHTML="যাচাই চলছে...";
+ let exist=new Set();
+ try{(await getDocs(collection(db,"donors"))).forEach(d=>exist.add(String(d.data().phone)))}catch(e){$("sum").innerHTML='<div class="card bad">বর্তমান তালিকা পড়া যায়নি</div>';return}
+ const seen=new Set(),bad=[];let dup=0;
+ for(const ln of lines){
+  const{r,why}=parse(ln,def);
+  if(!why.length){if(exist.has(r.phone)||seen.has(r.phone)){dup++;continue}seen.add(r.phone);good.push(r)}
+  else bad.push(ln+"  → "+why.join(", "))}
+ $("sum").innerHTML=`<div class="card"><span class="ok">ঠিক: ${good.length}</span> · <span class="bad">ভুল: ${bad.length}</span> · ডুপ্লিকেট বাদ: ${dup}</div>`;
+ $("bad").innerHTML=bad.length?`<div class="card bad">ঠিক করে আবার দিন:<br>${bad.map(b=>b.replace(/</g,"&lt;")).join("<br>")}</div>`:"";
+ $("imp").hidden=!good.length;$("imp").textContent=good.length+" জনকে ইমপোর্ট করুন"};
+$("imp").onclick=async()=>{
+ const st=$("st");st.hidden=false;$("imp").disabled=true;let n=0;
+ try{
+  for(let i=0;i<good.length;i+=400){
+   const b=writeBatch(db);
+   good.slice(i,i+400).forEach(r=>{const o={name:r.name,phone:r.phone,bg:r.bg,loc:r.loc,last:r.last,imported:true};if(r.age)o.age=r.age;b.set(doc(collection(db,"donors")),o)});
+   await b.commit();n=Math.min(i+400,good.length);st.textContent="যোগ হয়েছে: "+n+"/"+good.length}
+  st.innerHTML='<span class="ok">সব ইমপোর্ট হয়েছে ✓ ('+n+' জন)</span>';good=[];$("imp").hidden=true;
+ }catch(e){st.innerHTML='<span class="bad">সমস্যা: '+(e.code||e.message)+' (যোগ হয়েছে '+n+')</span>'}
+ $("imp").disabled=false};
+</script></body></html>

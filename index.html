@@ -60,7 +60,7 @@ function labels(){const s=T[L];document.documentElement.lang=L;
  for(const[k,v]of Object.entries({t:s.t,lb:s.lb,lp:s.lp,gin:s.gin,out:s.out,l_bg:s.bg,l_ar:s.ar,ft:s.ft,l_n:s.n,l_p:s.p,l_b2:s.b2,l_ag:s.ag,l_lc:s.lc,l_ld:s.ld,del:s.del}))$(k).textContent=v;
  const fv=$("fb").value,bv=$("b").value;opts($("fb"),1);opts($("b"));$("fb").value=fv;if(bv)$("b").value=bv;
  $("save").textContent=donors.some(d=>d.id===me)?s.upd:s.save;render()}
-const q=dg($("fs").value.trim().toLowerCase()),qg=q.replace(/\s/g,"").toUpperCase(),isG=/^(AB|A|B|O)[+-]?$/.test(qg);
+function render(){const s=T[L],g=$("fb").value,a=dg($("fa").value.trim().toLowerCase()),q=dg($("fs").value.trim().toLowerCase()),qg=q.replace(/\s/g,"").toUpperCase(),isG=/^(A|B|AB|O)[+-]?$/.test(qg);
 const mt=d=>!q||(isG?(/[+-]$/.test(qg)?d.bg===qg:String(d.bg).replace(/[+-]/,"")===qg):[d.name,d.phone,d.loc].some(v=>dg(String(v||"").toLowerCase()).includes(q)));
 const r=donors.filter(d=>mt(d)&&(!g||d.bg===g)&&(!a||dg(String(d.loc||"").toLowerCase()).includes(a))); 
  r.sort((x,y)=>String(x.last||"").localeCompare(String(y.last||"")));

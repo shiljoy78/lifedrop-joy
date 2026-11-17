@@ -27,6 +27,7 @@ a.call{margin-left:auto;text-decoration:none;background:var(--ok);color:#fff;bor
 <header><h1 id="t"></h1><div><button class="sm" id="lb"></button><button class="sm" id="out" hidden></button></div></header>
 <div id="login" hidden><p id="lp"></p><button class="btn" id="gin"></button><div class="msg" id="le"></div></div>
 <div id="app" hidden>
+ <div class="card"><input id="fs" placeholder="🔍 রক্তের গ্রুপ লিখুন (যেমন B+) বা নাম/ফোন/এলাকা"></div>
 <div class="card"><div class="row">
 <div><label id="l_bg"></label><select id="fb"></select></div>
 <div><label id="l_ar"></label><input id="fa" list="dl"></div></div></div>
@@ -59,8 +60,9 @@ function labels(){const s=T[L];document.documentElement.lang=L;
  for(const[k,v]of Object.entries({t:s.t,lb:s.lb,lp:s.lp,gin:s.gin,out:s.out,l_bg:s.bg,l_ar:s.ar,ft:s.ft,l_n:s.n,l_p:s.p,l_b2:s.b2,l_ag:s.ag,l_lc:s.lc,l_ld:s.ld,del:s.del}))$(k).textContent=v;
  const fv=$("fb").value,bv=$("b").value;opts($("fb"),1);opts($("b"));$("fb").value=fv;if(bv)$("b").value=bv;
  $("save").textContent=donors.some(d=>d.id===me)?s.upd:s.save;render()}
-function render(){const s=T[L],g=$("fb").value,a=dg($("fa").value.trim().toLowerCase());
- const r=donors.filter(d=>(!g||d.bg===g)&&(!a||dg(String(d.loc||"").toLowerCase()).includes(a)));
+const q=dg($("fs").value.trim().toLowerCase()),qg=q.replace(/\s/g,"").toUpperCase(),isG=/^(AB|A|B|O)[+-]?$/.test(qg);
+const mt=d=>!q||(isG?(/[+-]$/.test(qg)?d.bg===qg:String(d.bg).replace(/[+-]/,"")===qg):[d.name,d.phone,d.loc].some(v=>dg(String(v||"").toLowerCase()).includes(q)));
+const r=donors.filter(d=>mt(d)&&(!g||d.bg===g)&&(!a||dg(String(d.loc||"").toLowerCase()).includes(a))); 
  r.sort((x,y)=>String(x.last||"").localeCompare(String(y.last||"")));
  $("list").innerHTML=r.length?"":`<div class="msg">${s.none}</div>`;
  r.forEach(d=>{const el=document.createElement("div");el.className="card d";
@@ -91,6 +93,5 @@ $("save").onclick=async()=>{const s=T[L];if(!me)return;
  try{await setDoc(doc(db,"donors",me),{name:n,phone:p,bg:b,age:ag,loc:$("lc").value.trim(),last:$("ld").value||null});$("st").textContent=s.saved}catch(e){$("st").textContent=s.err}};
 $("del").onclick=async()=>{try{await deleteDoc(doc(db,"donors",me));["n","p","ag","lc","ld"].forEach(i=>$(i).value="");$("st").textContent=""}catch(e){$("st").textContent=T[L].err}};
 $("lb").onclick=()=>{L=L==="bn"?"en":"bn";$("st").textContent="";labels()};
-$("fb").onchange=render;$("fa").oninput=render;
-labels();
+$("fb").onchange=render;$("fa").oninput=render;$("fs").oninput=render;
 </script></body></html>
